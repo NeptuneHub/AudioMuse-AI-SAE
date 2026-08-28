@@ -87,54 +87,51 @@ index with it and the results lean toward viola.
 Other concepts, strengths and directions:
 
 ```bash
-python example.py --concept "female vocals" --strength 0.5
+python example.py --concept "female vocals" --strength 3
 python example.py --concept techno --direction less
-python example.py --query "calm piano at night" --concept piano --strength 2.0
+python example.py --query "calm piano at night" --concept piano --strength 10
 ```
 
-`--strength` takes 0.1, 0.2, 0.5, 1.0 or 2.0. Low values nudge the query, high
-values start to overwrite it. See [`example.py`](example.py) for the 40 lines
-that do the work.
+`--strength` takes 1, 3, 5 or 10. Each concept is a unit norm mask over its
+latents, so the same number means the same size of step for every concept. Low
+values nudge the query, high values start to overwrite it. The paper's own grid
+stops at 2.0, which on this dictionary is close to a no-op. See
+[`example.py`](example.py) for the 40 lines that do the work.
 
-## Two ways to apply a concept
+## How the edit works
 
-`example.py` shows the simple one: **edit the query**, then search as usual. It
-needs nothing but the query itself, which is why it is the example.
+Three details matter, and all three were arrived at by measurement:
 
-The stronger one is to **re-rank the results**. Retrieve a wide candidate set
-with the plain query, score every candidate on each requested concept, and order
-by the weakest score so a track has to satisfy all of them:
+**The mask is L2 normalised.** A concept is its latent support plus a unit norm
+mask over it, taken from the inverted code after the IDF penalty. Because the
+mask has a fixed length, one strength setting means the same step for every
+concept. Weighting each latent by how strongly it normally fires was tried
+instead; it pushes harder along the concept axis but drags the results into pure
+instrumental material, losing the genre and the vocals the query asked for.
 
-```python
-def concept_score(embeddings, term):
-    acts = encoder.run(None, {input_name: embeddings.astype(np.float32)})[0]
-    support = concepts[term]["support"]
-    share = acts[:, support].sum(axis=1) / acts.sum(axis=1).clip(1e-6)
-    return share.argsort().argsort() / max(1, len(share) - 1)
+**Only the difference is applied.** The autoencoder does not round trip a text
+embedding exactly, so decoding the edited code and using it directly replaces the
+query with its own reconstruction: most of the results change before any concept
+is touched. Applying `decode(edited) - decode(original)` to the original query
+cancels that error, and makes a zero strength edit an exact no-op.
 
+**Suppression clamps at zero, amplification does not.** Latent activations are
+non negative, so subtracting past zero is meaningless; clamping a positive edit
+would only distort it.
 
-def refine(embeddings, terms):
-    scores = np.stack([concept_score(embeddings, t) for t in terms])
-    return np.argsort(-scores.min(axis=0))
+Scored by hand over 50 results for the query "POP viola with female vocalist"
+with viola amplified, this reaches 80% of results in the requested genre, 76%
+containing the requested instrument and 98% with the requested vocal type,
+against 70% / 24% / 92% for an unsteered search.
 
+Notes:
 
-track_ids, track_vectors = my_index.search(query_vector, k=1000)
-order = refine(track_vectors, ["viola", "female vocals"])
-refined = [track_ids[i] for i in order][:50]
-```
-
-Editing the query moves it toward the midpoint between concepts, which is empty
-space when you ask for two things at once. Taking the minimum is a real
-conjunction: excelling at one concept cannot make up for missing another.
-
-Notes for both:
-
-* Your index is never rebuilt or re-quantised. Only the query or the order moves.
-* A re-rank can only reorder what retrieval returned. If the plain query found no
-  viola in its top 1000, raise `k`; no strength setting can conjure it.
+* Your index is never rebuilt or re-quantised. Only the query vector moves.
 * Concept quality varies. Every entry carries a `grounding` score measured at
   build time. Instruments and vocals score well; broad genre words such as
   `rock` or `pop` are diffuse and score near chance.
+* Instrument concepts are timbral, not literal. `viola`, `violin` and `cello`
+  share latents and behave as one "bowed strings" detector.
 
 ## Training
 

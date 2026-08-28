@@ -19,9 +19,15 @@ concept means anything. None of that belongs in a shipped artifact. The example
 tracks in particular are real titles out of whoever's library the dictionary was
 fitted on, so they are deliberately not carried over.
 
-What the serving path actually needs per concept is the latent support and each
-latent's mean activation, which is the natural scale a strength setting is
-multiplied by. Everything else here is labelling for the picker.
+What the serving path needs per concept is the latent support and the edit mask
+over it: the inverted code weighted by each latent's inverse document frequency,
+restricted to its largest coordinates and then L2 normalised, as the reference
+implementation does. Normalising is what makes a strength setting mean the same
+thing for every concept, because the mask is a fixed length step in latent space
+rather than a per concept scale. Weighting by each latent's mean activation was
+tried instead and scored better against the dictionary's own viola detector, but
+that measurement is circular: judged by ear the lists it produced were string
+quartet instrumentals that had lost the genre and the vocals entirely.
 
 Main Features:
 * Emits dclap_sae_concepts.json next to the exported ONNX graphs at the project
@@ -53,6 +59,7 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser(description='Build the shipped concept catalogue')
     parser.add_argument('--validated', default='runs/concepts_validated.json')
     parser.add_argument('--stats', default='runs/dclap_sae_d1024/best_eval/latent_stats.npz')
+    parser.add_argument('--support-size', type=int, default=12)
     parser.add_argument('--encoder', default='dclap_sae_k20_d1024_best_encoder.onnx')
     parser.add_argument('--decoder', default='dclap_sae_k20_d1024_best_decoder.onnx')
     parser.add_argument('--out', default='../dclap_sae_concepts.json')
@@ -62,20 +69,29 @@ def parse_args(argv=None):
 def main(argv=None):
     args = parse_args(argv)
     source = json.loads(Path(args.validated).read_text())
-    unit_activation = np.load(args.stats)['mean_activation']
+    stats = np.load(args.stats)
+    idf = np.clip(stats['idf'], 0.0, None)
 
     concepts = []
     for category in CATEGORY_ORDER:
         for entry in source['categories'].get(category, []):
-            support = entry['support']
+            support = np.asarray(entry['support'], dtype=np.int64)
+            weights = np.asarray(entry['support_values'], dtype=np.float64) * idf[support]
+            order = np.argsort(-np.abs(weights))[: args.support_size]
+            support = support[order]
+            weights = weights[order]
+            norm = float(np.linalg.norm(weights))
+            if norm <= 0.0:
+                continue
+            weights = weights / norm
             concepts.append(
                 {
                     'term': entry['term'],
                     'category': category,
                     'label': CATEGORY_LABELS.get(category, category.title()),
                     'grounding': entry['grounding'],
-                    'support': support,
-                    'unit_activation': [round(float(unit_activation[i]), 6) for i in support],
+                    'support': [int(i) for i in support],
+                    'mask': [round(float(v), 6) for v in weights],
                 }
             )
 

@@ -18,6 +18,12 @@ Run it with no arguments to see the worked example from the README: the query
 inside the sparse autoencoder, and the edited embedding is printed next to the
 original. Use the second embedding as the query vector for your search.
 
+Each concept is a unit norm mask over its latents, so a strength setting means
+the same step for every concept. Only the difference between the edited and the
+unedited reconstruction is applied to the query, because the autoencoder does not
+round trip a text embedding exactly and returning the raw reconstruction would
+change most of the results before any concept was touched.
+
 Main Features:
 * Embeds free text with the CLAP text tower, exactly as DCLAP search does.
 * Amplifies or suppresses any concept in the catalogue, at any strength.
@@ -40,7 +46,7 @@ def parse_args(argv=None):
     parser.add_argument('--models', default='models', help='folder holding the downloaded files')
     parser.add_argument('--query', default='POP Viola with Female vocalist')
     parser.add_argument('--concept', default='viola')
-    parser.add_argument('--strength', type=float, default=1.0, help='0.1, 0.2, 0.5, 1.0 or 2.0')
+    parser.add_argument('--strength', type=float, default=5.0, help='1, 3, 5 or 10')
     parser.add_argument('--direction', choices=['more', 'less'], default='more')
     return parser.parse_args(argv)
 
@@ -80,7 +86,7 @@ def enforce(models, embedding, term, strength, direction):
     original = encoder.run(None, {encoder.get_inputs()[0].name: embedding})[0].astype(np.float32)
     edited = original.copy()
     index = np.asarray(concept['support'], dtype=np.int64)
-    step = np.asarray(concept['unit_activation'], dtype=np.float32) * strength
+    step = np.asarray(concept['mask'], dtype=np.float32) * strength
     if direction == 'less':
         step = -step
     edited[0, index] = np.maximum(0.0, edited[0, index] + step)
