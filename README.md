@@ -100,38 +100,32 @@ stops at 2.0, which on this dictionary is close to a no-op. See
 
 ## How the edit works
 
-Three details matter, and all three were arrived at by measurement:
+The query embedding is encoded into 1024 sparse concept latents. The requested
+concept has a support, a small set of those latents, and a unit norm mask over
+it. Amplifying adds `alpha * mask` to those coordinates, suppressing subtracts it
+and clamps at zero, since latent activations are non negative. The edited code is
+decoded back to 512 dimensions, and the difference between the edited and the
+unedited reconstruction is added to the original query:
 
-**The mask is L2 normalised.** A concept is its latent support plus a unit norm
-mask over it, taken from the inverted code after the IDF penalty. Because the
-mask has a fixed length, one strength setting means the same step for every
-concept. Weighting each latent by how strongly it normally fires was tried
-instead; it pushes harder along the concept axis but drags the results into pure
-instrumental material, losing the genre and the vocals the query asked for.
+```
+s      = encoder(q)
+s'     = s + alpha * mask          (clamped at zero when suppressing)
+q'     = q + decoder(s') - decoder(s)
+```
 
-**Only the difference is applied.** The autoencoder does not round trip a text
-embedding exactly, so decoding the edited code and using it directly replaces the
-query with its own reconstruction: most of the results change before any concept
-is touched. Applying `decode(edited) - decode(original)` to the original query
-cancels that error, and makes a zero strength edit an exact no-op.
-
-**Suppression clamps at zero, amplification does not.** Latent activations are
-non negative, so subtracting past zero is meaningless; clamping a positive edit
-would only distort it.
-
-Scored by hand over 50 results for the query "POP viola with female vocalist"
-with viola amplified, this reaches 80% of results in the requested genre, 76%
-containing the requested instrument and 98% with the requested vocal type,
-against 70% / 24% / 92% for an unsteered search.
+Because the mask is unit norm, one strength setting means the same size of step
+for every concept in the catalogue. Because only the difference is applied, a
+strength of zero leaves the query exactly unchanged.
 
 Notes:
 
 * Your index is never rebuilt or re-quantised. Only the query vector moves.
-* Concept quality varies. Every entry carries a `grounding` score measured at
-  build time. Instruments and vocals score well; broad genre words such as
-  `rock` or `pop` are diffuse and score near chance.
+* Concept quality varies. Every entry carries a `grounding` score: the overlap
+  between the tracks its latents fire on and the tracks DCLAP itself ranks
+  highest for the same words. Instruments and vocals score well; broad genre
+  words such as `rock` or `pop` are diffuse and score near chance.
 * Instrument concepts are timbral, not literal. `viola`, `violin` and `cello`
-  share latents and behave as one "bowed strings" detector.
+  share latents and behave as a single bowed strings detector.
 
 ## Training
 
