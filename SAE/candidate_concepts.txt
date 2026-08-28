@@ -1,0 +1,139 @@
+genre|alternative
+genre|alternative rock
+genre|ambient
+genre|ambient music
+genre|blues
+genre|bossa nova
+genre|classic rock
+genre|classical music
+genre|country
+genre|dance
+genre|disco
+genre|drum and bass
+genre|easy listening
+genre|electro
+genre|electronic
+genre|electronica
+genre|experimental
+genre|folk
+genre|folk music
+genre|funk
+genre|gospel music
+genre|hard rock
+genre|heavy metal
+genre|hip hop
+genre|Hip-Hop
+genre|House
+genre|house music
+genre|indie
+genre|indie pop
+genre|indie rock
+genre|jazz
+genre|latin music
+genre|metal
+genre|oldies
+genre|opera
+genre|pop
+genre|Progressive rock
+genre|punk
+genre|punk rock
+genre|reggae
+genre|rnb
+genre|rock
+genre|ska
+genre|soul
+genre|soul music
+genre|techno
+genre|trance
+instrument|accordion
+instrument|acoustic guitar
+instrument|banjo
+instrument|bass guitar
+instrument|brass section
+instrument|cello
+instrument|choir
+instrument|clarinet
+instrument|double bass
+instrument|drums
+instrument|electric guitar
+instrument|electric piano
+instrument|flute
+instrument|guitar
+instrument|harmonica
+instrument|harp
+instrument|keyboard
+instrument|mandolin
+instrument|orchestra
+instrument|organ
+instrument|percussion
+instrument|piano
+instrument|saxophone
+instrument|sitar
+instrument|steel guitar
+instrument|strings
+instrument|strings section
+instrument|synthesizer
+instrument|trombone
+instrument|trumpet
+instrument|ukulele
+instrument|viola
+instrument|violin
+instrument|woodwind
+vocals|duet
+vocals|female vocalist
+vocals|female vocalists
+vocals|female vocals
+vocals|instrumental
+vocals|instrumental music with no vocals
+vocals|male vocalists
+vocals|male vocals
+vocals|rap vocals
+vocals|spoken word
+vocals|vocal harmony
+mood|aggressive
+mood|angry
+mood|beautiful
+mood|calm
+mood|catchy
+mood|chill
+mood|chillout
+mood|danceable
+mood|dark
+mood|dreamy
+mood|energetic
+mood|epic
+mood|happy
+mood|melancholic
+mood|Mellow
+mood|nostalgic
+mood|party
+mood|peaceful
+mood|relaxed
+mood|relaxing
+mood|romantic
+mood|sad
+mood|sexy
+mood|uplifting
+production|acoustic
+production|distorted guitar
+production|electronic beat
+production|heavy bass
+production|live recording
+production|lo-fi
+production|orchestral
+production|reverb
+tempo|danceable beat
+tempo|fast drum beat
+tempo|fast tempo
+tempo|medium tempo
+tempo|slow tempo
+era|00s
+era|1960s music
+era|1970s music
+era|1980s music
+era|1990s music
+era|2000s music
+era|60s
+era|70s
+era|80s
+era|90s
