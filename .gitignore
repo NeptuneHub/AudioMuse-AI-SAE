@@ -1,0 +1,14 @@
+# Models downloaded by the Quick start
+models/
+*.onnx
+*.onnx.data
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Training working files
+data/
+runs/
